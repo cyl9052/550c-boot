@@ -12,9 +12,9 @@ Write-Host '   550C 开机动画 · 安装程序' -ForegroundColor White
 Write-Host '  ================================' -ForegroundColor Red
 Write-Host ''
 
-$pw = Read-Host '  设置 6 位数字口令（直接回车 = 771002）'
-if (-not $pw) { $pw = '771002' }
-if ($pw -notmatch '^\d{6}$') { Write-Host '  口令必须是 6 位数字，已回退为 771002' -ForegroundColor Yellow; $pw = '771002' }
+$pw = Read-Host '  设置 6 位数字口令（必须填 6 位数字，别用生日/手机号）'
+while (-not $pw -or $pw -notmatch '^\d{6}$') { Write-Host '  必须是 6 位数字：' -NoNewline -ForegroundColor Yellow; $pw = Read-Host }
+if ($pw -notmatch '^\d{6}$') { Write-Host '  口令必须是 6 位数字，请重新输入' -ForegroundColor Yellow; $pw = '000000' }
 
 foreach ($f in '550c.html','play-boot.cjs','pet-vis.ps1') {
   Copy-Item (Join-Path $src $f) (Join-Path $dst $f) -Force
