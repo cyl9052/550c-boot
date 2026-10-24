@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>550C</title>
+<style>
+  :root{
+    --bg:#0a0606;
+    --bg2:#140a0a;
+    --red:#b3121b;
+    --red-hi:#e23a2e;
+    --red-dim:#5e0a0e;
+    --ink:#efe7dc;
+    --ink-dim:#9c8f84;
+    --amber:#e0873c;
+    --line:rgba(179,18,27,.42);
+    --line-soft:rgba(179,18,27,.20);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:var(--bg);overflow:hidden;cursor:none;
+    font-family:'Microsoft YaHei UI','Consolas',sans-serif;color:var(--ink)}
+  #app{position:fixed;inset:0;overflow:hidden}
+
+  /* ---------- 底纹 ---------- */
+  .grid{position:absolute;inset:0;
+    background-image:linear-gradient(rgba(179,18,27,.055) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(179,18,27,.055) 1px,transparent 1px);
+    background-size:52px 52px}
+  .glowbg{position:absolute;inset:0;
+    background:radial-gradient(ellipse 60% 50% at 50% 46%,rgba(179,18,27,.16),transparent 70%)}
+  .scan{position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.42) 0px,rgba(0,0,0,.42) 1px,transparent 1px,transparent 3px);
+    opacity:.6}
+  .vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,.9) 100%)}
+  .flick{position:absolute;inset:0;background:var(--red-hi);opacity:.008;animation:fk .14s steps(2) infinite}
+  @keyframes fk{0%{opacity:.006}50%{opacity:.018}100%{opacity:.005}}
+  .sweep{position:absolute;left:0;right:0;height:160px;background:linear-gradient(180deg,transparent,rgba(226,58,46,.05),transparent);animation:sw 6s linear infinite}
+  @keyframes sw{0%{top:-180px}100%{top:100%}}
+
+  /* ---------- 外框 ---------- */
+  .frame{position:absolute;inset:26px;border:1px solid var(--line-soft);pointer-events:none}
+  .frame::before,.frame::after{content:'';position:absolute;width:26px;height:26px;border:2px solid var(--red)}
+  .frame::before{left:-2px;top:-2px;border-right:0;border-bottom:0}
+  .frame::after{right:-2px;bottom:-2px;border-left:0;border-top:0}
+  .corner{position:absolute;width:26px;height:26px;border:2px solid var(--red);opacity:.75}
+  .corner.tr{right:24px;top:24px;border-left:0;border-bottom:0}
+  .corner.bl{left:24px;bottom:24px;border-right:0;border-top:0}
+
+  /* ---------- 顶栏 ---------- */
+  .top{position:absolute;top:46px;left:56px;right:56px;display:flex;align-items:flex-end;gap:22px}
+  .logo{font-size:40px;letter-spacing:10px;color:var(--ink);text-shadow:0 0 30px rgba(226,58,46,.55);font-weight:300}
+  .logo b{color:var(--red-hi);font-weight:600}
+  .logo-sub{font-size:10px;letter-spacing:5px;color:var(--red);padding-bottom:9px}
+  .top-right{margin-left:auto;text-align:right;font-size:10px;letter-spacing:4px;color:var(--ink-dim);line-height:1.9}
+  .top-right .hot{color:var(--red-hi)}
+
+  /* ---------- 登录 ---------- */
+  #login{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:opacity .5s}
+  .card{position:relative;width:620px;padding:46px 52px 40px;
+    background:linear-gradient(160deg,rgba(20,10,10,.96),rgba(10,6,6,.98));
+    border:1px solid var(--line);
+    clip-path:polygon(0 18px,18px 0,calc(100% - 18px) 0,100% 18px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px));
+    box-shadow:0 0 60px rgba(179,18,27,.18),inset 0 0 60px rgba(0,0,0,.6)}
+  .card::before{content:'';position:absolute;left:0;top:0;width:100%;height:2px;
+    background:linear-gradient(90deg,var(--red),transparent 60%)}
+  .ueg{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+  .emblem{width:44px;height:44px;position:relative;flex:none}
+  .emblem i{position:absolute;inset:0;border:1.5px solid var(--red);border-radius:50%}
+  .emblem i:nth-child(2){inset:9px;border-color:rgba(226,58,46,.55)}
+  .emblem i:nth-child(3){inset:17px;background:var(--red);border:0;border-radius:50%;box-shadow:0 0 16px var(--red)}
+  .ueg-t{font-size:17px;letter-spacing:6px;color:var(--ink)}
+  .ueg-s{font-size:9px;letter-spacing:4px;color:var(--ink-dim);margin-top:5px}
+  .row{display:flex;justify-content:space-between;align-items:center;
+    padding:13px 0;border-bottom:1px solid rgba(179,18,27,.18);font-size:12px;letter-spacing:2px}
+  .row .k{color:var(--ink-dim)}
+  .row .v{color:var(--ink)}
+  .pw{margin-top:30px}
+  .pw .label{font-size:10px;letter-spacing:5px;color:var(--red);margin-bottom:12px}
+  .pwbox{display:flex;align-items:center;gap:14px;border:1px solid var(--line);padding:16px 18px;
+    background:rgba(179,18,27,.04)}
+  .dots{display:flex;gap:11px;flex:1}
+  .dots i{width:13px;height:13px;border:1.5px solid var(--red);border-radius:50%;transition:.12s}
+  .dots i.on{background:var(--red);box-shadow:0 0 14px var(--red)}
+  .dots i.err{border-color:#ff6a5a;background:#ff3a28}
+  .hint{font-size:9px;letter-spacing:3px;color:var(--ink-dim);margin-top:14px;display:flex;justify-content:space-between}
+  .hint .blink{color:var(--red-hi);animation:bk 1.1s steps(1) infinite}
+  @keyframes bk{50%{opacity:.2}}
+  .status{margin-top:22px;font-size:11px;letter-spacing:4px;color:var(--ink-dim);min-height:18px}
+  .status.deny{color:#ff4a35}
+  .status.ok{color:#7fe0a0}
+  .card.shake{animation:sk .4s}
+  @keyframes sk{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+
+  
+  /* ---------- 生物核验 ---------- */
+  .bio{margin-top:26px}
+  .bio .label{font-size:10px;letter-spacing:5px;color:var(--red);margin-bottom:12px}
+  .scanbox{position:relative;height:150px;border:1px solid var(--line);background:rgba(179,18,27,.05);overflow:hidden}
+  .reticle{position:absolute;left:50%;top:50%;width:104px;height:126px;transform:translate(-50%,-50%);
+    border:1px solid rgba(226,58,46,.55);border-radius:50% 50% 46% 46%}
+  .reticle::before,.reticle::after{content:'';position:absolute;left:-9px;right:-9px;height:1px;background:rgba(226,58,46,.35)}
+  .reticle::before{top:34%}.reticle::after{top:64%}
+  .sweep2{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--red-hi),transparent);
+    box-shadow:0 0 14px rgba(226,58,46,.9);animation:sc2 2.1s linear infinite}
+  @keyframes sc2{0%{top:4%}100%{top:96%}}
+  .faceicon{position:absolute;left:50%;top:34%;transform:translateX(-50%);font-size:52px;color:rgba(226,58,46,.25)}
+  .scantext{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:10px;letter-spacing:4px;color:var(--ink-dim)}
+  .scanbox.ok{border-color:rgba(110,220,150,.6);background:rgba(60,200,120,.06)}
+  .scanbox.ok .sweep2{background:linear-gradient(90deg,transparent,#6fd69a,transparent);box-shadow:0 0 14px rgba(110,214,154,.9);animation:none;top:50%}
+  .scanbox.bad{border-color:rgba(255,80,60,.7);background:rgba(255,60,40,.07)}
+  .bio-meta{display:flex;justify-content:space-between;margin-top:10px;font-size:9px;letter-spacing:3px;color:var(--ink-dim)}
+  .fallback{display:flex;align-items:center;gap:12px;margin-top:20px;padding-top:16px;border-top:1px solid rgba(179,18,27,.16)}
+  .fallback .fb-k{font-size:9px;letter-spacing:3px;color:var(--red)}
+  .fallback .dots{margin:0}
+  .fallback .fb-hint{font-size:9px;letter-spacing:2px;color:var(--ink-dim);margin-left:auto}
+
+  /* ---------- 自检 ---------- */
+  #boot{position:absolute;inset:0;display:none;opacity:0;transition:opacity .6s}
+  #boot.on{display:block;opacity:1}
+  .bl{position:absolute;top:46px;left:56px;right:56px;bottom:120px;display:grid;grid-template-columns:1fr 380px}
+  .bllog{padding-top:26px;font-family:Consolas,'Microsoft YaHei UI',monospace;font-size:13.5px;line-height:2.1;
+    color:#c9bdb2;white-space:pre-wrap;overflow:hidden}
+  .bllog .ok{color:#6fd69a}
+  .bllog .warn{color:var(--amber)}
+  .bllog .hot{color:var(--red-hi)}
+  .bllog .dim{color:#6d6360}
+  .blright{position:relative;border-left:1px solid var(--line-soft);display:flex;align-items:center;justify-content:center}
+  .ringw{position:relative;width:300px;height:300px}
+  .ringw .r{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(179,18,27,.35)}
+  .ringw .r1{animation:sp 26s linear infinite}
+  .ringw .r2{inset:24px;border-style:dashed;border-color:rgba(226,58,46,.30);animation:sp 17s linear infinite reverse}
+  .ringw .r3{inset:52px;border:2px solid rgba(179,18,27,.55)}
+  .ringw .arc{position:absolute;inset:80px;border-radius:50%;border:3px solid transparent;
+    border-top-color:var(--red-hi);border-right-color:var(--red);animation:sp 4.6s linear infinite;
+    filter:drop-shadow(0 0 10px rgba(226,58,46,.8))}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .num .big{font-size:52px;letter-spacing:9px;color:var(--ink);font-weight:300;text-shadow:0 0 30px rgba(226,58,46,.5)}
+  .num .sm{font-size:9px;letter-spacing:6px;color:var(--red);margin-top:8px}
+  .barw{position:absolute;left:56px;right:56px;bottom:96px}
+  .bar{height:5px;background:rgba(179,18,27,.15);position:relative;overflow:hidden}
+  .bar i{position:absolute;inset:0 100% 0 0;background:linear-gradient(90deg,var(--red-dim),var(--red-hi));
+    box-shadow:0 0 16px rgba(226,58,46,.9);transition:right .45s}
+  .barmeta{display:flex;justify-content:space-between;margin-top:10px;font-size:10px;letter-spacing:4px;color:var(--ink-dim)}
+  .barmeta .p{color:var(--red-hi)}
+
+  /* ---------- 底栏 ---------- */
+  .bot{position:absolute;left:56px;right:56px;bottom:40px;display:flex;gap:30px;align-items:center;
+    font-size:9.5px;letter-spacing:3px;color:var(--ink-dim)}
+  .bot .v{color:var(--ink)}
+  .bot .sep{width:1px;height:20px;background:rgba(179,18,27,.3)}
+  .bot .right{margin-left:auto;color:var(--red)}
+
+  /* ---------- 结束 ---------- */
+  .final{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;opacity:0;transition:opacity 1s;z-index:20;pointer-events:none}
+  .final.on{opacity:1}
+  .final .t{font-size:38px;letter-spacing:14px;color:var(--ink);text-shadow:0 0 44px rgba(226,58,46,.7)}
+  .final .s{margin-top:16px;font-size:11px;letter-spacing:7px;color:var(--red-hi)}
+  .final .l{width:320px;height:1px;margin-top:28px;background:linear-gradient(90deg,transparent,var(--red),transparent)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="grid"></div><div class="glowbg"></div><div class="sweep"></div>
+  <div class="frame"></div><div class="corner tr"></div><div class="corner bl"></div>
+
+  <div class="top">
+    <div class="logo">550<b>C</b></div>
+    <div class="logo-sub">GENERAL QUANTUM COMPUTER</div>
+    <div class="top-right">
+      <div>UEG / 授权终端 <span class="hot">●</span> 已加密</div>
+      <div id="clock">2058.11.29 07:42:11</div>
+    </div>
+  </div>
+
+  <!-- 登录 -->
+  <div id="login">
+    <div class="card" id="card">
+      <div class="ueg">
+        <div class="emblem"><i></i><i></i><i></i></div>
+        <div>
+          <div class="ueg-t">联合政府 地球联合政府</div>
+          <div class="ueg-s">UNITED EARTH GOVERNMENT · AUTHORIZED PERSONNEL ONLY</div>
+        </div>
+      </div>
+
+      <div class="row"><span class="k">人员编号 / STAFF ID</span><span class="v hot">CY0</span></div>
+      <div class="row"><span class="k">所属单位 / DIVISION</span><span class="v">第一区 · 550 系列研发组</span></div>
+      <div class="row"><span class="k">权限等级 / CLEARANCE</span><span class="v">S 级 · 全域通行</span></div>
+      <div class="row"><span class="k">服役编号 / SERVICE NO.</span><span class="v">UEG-1D-7749</span></div>
+      <div class="row"><span class="k">驻地 / STATION</span><span class="v">第一区 地下城 · 领航员空间站</span></div>
+
+      <div class="bio">
+        <div class="label">生物特征核验 / BIOMETRIC VERIFICATION</div>
+        <div class="scanbox" id="scanbox">
+          <div class="reticle"></div>
+          <div class="sweep2"></div>
+          <div class="faceicon">⌗</div>
+          <div class="scantext" id="scantext">按 F 开始人脸识别　·　或直接输入 6 位口令</div>
+        </div>
+        <div class="bio-meta">
+          <span>采样通道 CAM-01</span>
+          <span id="dist">—</span>
+          <span id="attempt">第 1 次</span>
+        </div>
+        <div class="fallback">
+          <span class="fb-k">备用口令</span>
+          <span class="dots" id="dots"></span>
+          <span class="fb-hint">直接输入 6 位数字</span>
+        </div>
+        <div class="status" id="status">等待身份核验…</div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 自检 -->
+  <div id="boot">
+    <div class="bl">
+      <div class="bllog" id="bllog"></div>
+      <div class="blright">
+        <div class="ringw">
+          <div class="r r1"></div><div class="r r2"></div><div class="r r3"></div><div class="arc"></div>
+          <div class="num"><div class="big">550C</div><div class="sm">SELF-CHECK</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="barw">
+      <div class="bar"><i id="fill"></i></div>
+      <div class="barmeta"><span>系统自检 / SYSTEM DIAGNOSTICS</span><span class="p" id="pct">0%</span></div>
+    </div>
+  </div>
+
+  <div class="bot">
+    <div>联合政府 UEG</div><div class="sep"></div>
+    <div>引擎网络 <span class="v" id="eng">在线</span></div><div class="sep"></div>
+    <div>冷聚变 <span class="v" id="pow">97.3%</span></div><div class="sep"></div>
+    <div>人员核验 <span class="v" id="who">待验证</span></div>
+    <div class="right">2058 · 逐月计划</div>
+  </div>
+
+  <div class="final" id="final">
+    <div class="t">550C</div>
+    <div class="s">身份确认 · 访问授权 · 欢迎回来</div>
+    <div class="l"></div>
+  </div>
+
+  <div class="vig"></div><div class="scan"></div><div class="flick"></div>
+</div>
+
+<script>
+const PASS = "771002";
+const dotsEl = document.getElementById('dots');
+const statusEl = document.getElementById('status');
+const card = document.getElementById('card');
+
+for (let i = 0; i < 6; i++) {
+  const d = document.createElement('i');
+  dotsEl.appendChild(d);
+}
+let buf = "";
+let locked = false;
+
+function render() {
+  [...dotsEl.children].forEach((d, i) => d.classList.toggle('on', i < buf.length));
+}
+
+document.addEventListener('keydown', (e) => {
+  if (locked) return;
+  if (e.key === 'f' || e.key === 'F') { e.preventDefault(); startScanLoop(); return; }
+  if (e.key === 'Enter') { submit(); return; }
+  if (e.key === 'Backspace') { buf = buf.slice(0, -1); render(); return; }
+  if (/^[0-9]$/.test(e.key) && buf.length < 6) {
+    if (scanTimer) { clearInterval(scanTimer); scanTimer = null; }
+    scanbox.classList.remove('ok', 'bad');
+    scantext.textContent = '口令模式';
+    buf += e.key;
+    render();
+    statusEl.textContent = '校验中…';
+    statusEl.className = 'status';
+    if (buf.length === 6) setTimeout(submit, 220);
+  }
+});
+
+function submit() {
+  if (locked) return;
+  if (buf === PASS) {
+    locked = true;
+    statusEl.textContent = '口令正确 · 正在建立安全会话';
+    statusEl.className = 'status ok';
+    document.getElementById('who').textContent = '已通过';
+    setTimeout(startBoot, 600);
+  } else {
+    locked = true;
+    statusEl.textContent = '访问被拒绝 / ACCESS DENIED';
+    statusEl.className = 'status deny';
+    [...dotsEl.children].forEach((d) => d.classList.add('err'));
+    card.classList.add('shake');
+    setTimeout(() => {
+      card.classList.remove('shake');
+      buf = '';
+      locked = false;
+      render();
+      [...dotsEl.children].forEach((d) => d.classList.remove('err'));
+      statusEl.textContent = '等待输入…';
+      statusEl.className = 'status';
+    }, 1100);
+  }
+}
+
+// ---------- 自检 ----------
+const steps = [
+  ['dim',  '> 550C BIOS v2.58.11   校验和 <span class="ok">OK</span>'],
+  ['',     '> 量子芯片阵列 0-7 ............... <span class="ok">全部在线</span>'],
+  ['',     '> 超导环温度 -273.14°C ........... <span class="ok">稳定</span>'],
+  ['',     '> 冷聚变电池组 ................... <span class="ok">97.3%</span>'],
+  ['',     '> 行星发动机控制网络 ............. <span class="ok">已接入</span>'],
+  ['warn', '> 检测到未登记终端接入 —— 正在复核'],
+  ['',     '> 生物特征采样 ................... <span class="ok">匹配</span>'],
+  ['',     '> 权限等级 ....................... <span class="hot">S</span>'],
+  ['dim',  '> 载入用户环境 /root/boss ........'],
+  ['',     '> 桌面服务 ....................... <span class="ok">启动</span>'],
+];
+
+const bllog = document.getElementById('bllog');
+const fill = document.getElementById('fill');
+const pctEl = document.getElementById('pct');
+
+function startBoot() {
+  document.getElementById('login').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('login').style.display = 'none';
+    const b = document.getElementById('boot');
+    b.classList.add('on');
+    runStep(0);
+  }, 500);
+}
+
+function runStep(i) {
+  if (i >= steps.length) { done(); return; }
+  const [cls, html] = steps[i];
+  const div = document.createElement('div');
+  if (cls) div.className = cls;
+  div.innerHTML = html;
+  bllog.appendChild(div);
+  if (bllog.children.length > 11) bllog.removeChild(bllog.firstChild);
+  const p = Math.min(100, Math.round((i + 1) / (steps.length + 1) * 100));
+  fill.style.right = (100 - p) + '%';
+  pctEl.textContent = p + '%';
+  setTimeout(() => runStep(i + 1), 760 + Math.random() * 320);
+}
+
+function done() {
+  fill.style.right = '0%';
+  pctEl.textContent = '100%';
+  setTimeout(() => {
+    document.getElementById('final').classList.add('on');
+    setTimeout(() => { try { window.close(); } catch (e) {} }, 3400);
+  }, 500);
+}
+
+// 时钟
+let t = 0;
+const clock = document.getElementById('clock');
+setInterval(() => {
+  t++;
+  const d = new Date(Date.now() + t * 1000);
+  const p = (n) => String(n).padStart(2, '0');
+  clock.textContent = `2058.11.29 ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}, 1000);
+
+// ---------- 人脸核验 ----------
+const scanbox = document.getElementById('scanbox');
+const scantext = document.getElementById('scantext');
+const distEl = document.getElementById('dist');
+const attemptEl = document.getElementById('attempt');
+let attempts = 0;
+let scanning = false;
+let passed = false;
+
+async function scanOnce() {
+  if (scanning || passed) return;
+  scanning = true;
+  attempts++;
+  attemptEl.textContent = '第 ' + attempts + ' 次';
+  scantext.textContent = '正在采集面部特征…';
+  scanbox.classList.remove('ok', 'bad');
+  try {
+    const r = await fetch('http://127.0.0.1:7790/face', { cache: 'no-store' });
+    const j = await r.json();
+    distEl.textContent = j.distance ? ('匹配度距离 ' + j.distance.toFixed(3)) : '—';
+    if (j.ok) {
+      passed = true;
+      scanbox.classList.add('ok');
+      scantext.textContent = '身份确认：CY0 · 第一区';
+      statusEl.textContent = '生物特征匹配 · 正在建立安全会话';
+      statusEl.className = 'status ok';
+      document.getElementById('who').textContent = '已通过';
+      setTimeout(startBoot, 900);
+    } else {
+      scanbox.classList.add('bad');
+      scantext.textContent = j.reason;
+      statusEl.textContent = attempts >= 3 ? '核验失败 · 请使用备用口令' : '无法核验，调整面部位置';
+      statusEl.className = 'status deny';
+    }
+  } catch (e) {
+    scantext.textContent = '核验服务未响应';
+    statusEl.textContent = '请使用备用口令';
+    statusEl.className = 'status deny';
+  }
+  scanning = false;
+}
+
+let scanTimer = null;
+function startScanLoop() {
+  if (passed || scanning) return;
+  statusEl.textContent = '人脸识别已启动 · 请正对摄像头';
+  statusEl.className = 'status';
+  scanOnce();
+  if (scanTimer) clearInterval(scanTimer);
+  scanTimer = setInterval(() => {
+    if (passed || attempts >= 6) { clearInterval(scanTimer); scanTimer = null; return; }
+    scanOnce();
+  }, 2600);
+}
+
+window.focus();
+document.body.focus();
+</script>
+</body>
+</html>
